@@ -718,6 +718,83 @@
   }
   .tag-remove:hover { opacity: 1; background: rgba(31,56,100,0.12); }
 
+  /* ── Botón ⚙ ── */
+  .btn-icon {
+    background: none; border: none; cursor: pointer;
+    font-size: 16px; color: var(--ink-soft); padding: 4px 6px;
+    border-radius: 5px; transition: background 0.15s, color 0.15s;
+    line-height: 1;
+  }
+  .btn-icon:hover { background: rgba(0,0,0,0.07); color: var(--ink); }
+
+  /* ── Modal Config ── */
+  .cfg-tabs {
+    display: flex; gap: 0; border-bottom: 1px solid var(--line);
+    padding: 0 18px; background: rgba(0,0,0,0.015);
+  }
+  .cfg-tab {
+    padding: 8px 14px; border: none; background: none; cursor: pointer;
+    font-size: 12px; font-weight: 500; color: var(--ink-soft); font-family: inherit;
+    border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s;
+  }
+  .cfg-tab:hover { color: var(--ink); }
+  .cfg-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+  .cfg-panel { padding: 16px 18px 4px; }
+  .cfg-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; max-height: 280px; overflow-y: auto; }
+  .cfg-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; background: var(--bg); border: 1px solid var(--line);
+    border-radius: 5px;
+  }
+  .cfg-item-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .cfg-item input[type="text"] {
+    flex: 1; border: none; background: transparent; font-size: 13px;
+    font-family: inherit; color: var(--ink); padding: 0; outline: none;
+  }
+  .cfg-item input[type="text"]:focus { text-decoration: underline; }
+  .cfg-item-reorder { display: flex; gap: 2px; }
+  .cfg-item-reorder button, .cfg-item-del {
+    background: none; border: none; cursor: pointer; font-size: 13px;
+    color: var(--ink-soft); padding: 2px 5px; border-radius: 3px;
+    transition: background 0.12s;
+  }
+  .cfg-item-reorder button:hover { background: rgba(0,0,0,0.07); }
+  .cfg-item-del:hover { background: var(--vencida-bg); color: var(--alta); }
+  .cfg-item-vis { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+
+  .cfg-add {
+    display: flex; gap: 7px; align-items: center;
+    padding-top: 4px; border-top: 1px dashed var(--line);
+    margin-bottom: 8px;
+  }
+  .cfg-add input { flex: 1; }
+  .cfg-hint { font-size: 10.5px; color: var(--ink-soft); line-height: 1.4; margin-bottom: 14px; }
+
+  /* Preferencias */
+  .pref-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 10px 0; border-bottom: 1px solid var(--line);
+  }
+  .pref-row:last-of-type { border-bottom: none; }
+  .pref-label { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+  .pref-sub   { font-size: 11px; color: var(--ink-soft); }
+  .toggle { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-track {
+    position: absolute; inset: 0; background: #ccc; border-radius: 20px;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .toggle-track::before {
+    content: ''; position: absolute; width: 14px; height: 14px; border-radius: 50%;
+    background: white; top: 3px; left: 3px; transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .toggle input:checked + .toggle-track { background: var(--accent); }
+  .toggle input:checked + .toggle-track::before { transform: translateX(16px); }
+
   /* ── Toast ── */
   .toast {
     position: fixed; bottom: 18px; left: 50%;
@@ -753,6 +830,7 @@
       <div class="sync-dot" id="sync-dot"></div>
       <span id="sync-status">Conectando…</span>
     </div>
+    <button class="btn-icon" onclick="openSettings('areas')" title="Configuración">⚙</button>
   </div>
 </header>
 
@@ -796,28 +874,7 @@
   <button class="btn-primary" onclick="openModal()">+ Nueva tarea</button>
 </div>
 
-<div class="kanban" id="kanban">
-  <div class="column" data-status="Pendiente">
-    <div class="column-header"><span class="column-title">Pendiente</span><span class="column-count">0</span></div>
-    <div class="column-body"></div>
-  </div>
-  <div class="column" data-status="En curso">
-    <div class="column-header"><span class="column-title">En curso</span><span class="column-count">0</span></div>
-    <div class="column-body"></div>
-  </div>
-  <div class="column" data-status="Bloqueada">
-    <div class="column-header"><span class="column-title">Bloqueada</span><span class="column-count">0</span></div>
-    <div class="column-body"></div>
-  </div>
-  <div class="column" data-status="Completada">
-    <div class="column-header"><span class="column-title">Completada</span><span class="column-count">0</span></div>
-    <div class="column-body"></div>
-  </div>
-  <div class="column" data-status="Cancelada">
-    <div class="column-header"><span class="column-title">Cancelada</span><span class="column-count">0</span></div>
-    <div class="column-body"></div>
-  </div>
-</div>
+<div class="kanban" id="kanban"><!-- generado por renderKanbanShell() --></div>
 
 <div class="table-view" id="table-view">
   <table>
@@ -905,6 +962,71 @@
   </div>
 </div>
 
+<!-- Modal Configuración -->
+<div class="modal-backdrop" id="settings-modal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <div class="modal-title">⚙ Configuración</div>
+      <button class="modal-close" onclick="closeSettings()">×</button>
+    </div>
+    <div class="cfg-tabs">
+      <button class="cfg-tab active" data-tab="areas"   onclick="openSettings('areas')">Áreas</button>
+      <button class="cfg-tab"        data-tab="colabs"  onclick="openSettings('colabs')">Colaboradores</button>
+      <button class="cfg-tab"        data-tab="kanban"  onclick="openSettings('kanban')">Kanban</button>
+      <button class="cfg-tab"        data-tab="prefs"   onclick="openSettings('prefs')">Preferencias</button>
+    </div>
+    <!-- Áreas -->
+    <div class="cfg-panel" id="cfg-areas">
+      <div class="cfg-list" id="cfg-areas-list"></div>
+      <div class="cfg-add">
+        <input type="text" id="cfg-area-new" placeholder="Nombre del área…" maxlength="30">
+        <button class="btn-primary" onclick="cfgAddArea()">+ Agregar</button>
+      </div>
+      <p class="cfg-hint">Eliminar un área no borra las tareas que la tengan asignada.</p>
+    </div>
+    <!-- Colaboradores -->
+    <div class="cfg-panel" id="cfg-colabs" style="display:none">
+      <div class="cfg-list" id="cfg-colabs-list"></div>
+      <div class="cfg-add">
+        <input type="text" id="cfg-colab-new" placeholder="Nombre o siglas…" maxlength="40">
+        <button class="btn-primary" onclick="cfgAddColab()">+ Agregar</button>
+      </div>
+      <p class="cfg-hint">Los colaboradores aparecen como sugerencias al asignar responsables.</p>
+    </div>
+    <!-- Kanban -->
+    <div class="cfg-panel" id="cfg-kanban" style="display:none">
+      <div class="cfg-list" id="cfg-kanban-list"></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:12px">
+        <button class="btn-primary" onclick="cfgSaveKanban()">Aplicar cambios</button>
+      </div>
+      <p class="cfg-hint">El <b>estado interno</b> (entre paréntesis) no cambia — es la clave que usa el Sheet.</p>
+    </div>
+    <!-- Preferencias -->
+    <div class="cfg-panel" id="cfg-prefs" style="display:none">
+      <div class="pref-row">
+        <div>
+          <div class="pref-label">Días para alerta "próxima"</div>
+          <div class="pref-sub">Resalta en naranja tareas que vencen en los próximos N días</div>
+        </div>
+        <input type="number" id="pref-dias" min="1" max="60" style="width:64px;text-align:center"
+               onchange="cfgSavePref('diasProxima', +this.value)">
+      </div>
+      <div class="pref-row">
+        <div>
+          <div class="pref-label">Ocultar completadas / canceladas en Kanban</div>
+          <div class="pref-sub">Las columnas quedan vacías y más limpias</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="pref-ocultar"
+                 onchange="cfgSavePref('ocultarTerminadas', this.checked)">
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+      <p class="cfg-hint">Estas preferencias son <b>personales</b> — se guardan en tu navegador, no en el Sheet.</p>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -921,8 +1043,33 @@ let filtered = [];
 let draggedRow = null;
 let sortCol = null;
 let sortDir = 1;
-let AREAS = ['General', 'Negocio', 'PxD', 'OT'];
-let respTags = [];   // responsables de la tarea en edición
+let respTags = [];  // responsables en edición
+
+// Paleta de colores para áreas dinámicas (10 opciones cíclicas)
+const AREA_PALETTE = [
+  '#6B6B8F','#2E7DD7','#2E9D5C','#C13B3B',
+  '#D89D2F','#8B5CF6','#EC4899','#14B8A6','#F97316','#6366F1'
+];
+
+// CONFIG: compartida (Sheet) + prefs personales (localStorage)
+let CONFIG = {
+  areas:       ['General', 'Negocio', 'PxD', 'OT'],
+  colaboradores: [],
+  kanbanCols: [
+    { status:'Pendiente',  label:'Pendiente',  visible:true },
+    { status:'En curso',   label:'En curso',   visible:true },
+    { status:'Bloqueada',  label:'Bloqueada',  visible:true },
+    { status:'Completada', label:'Completada', visible:true },
+    { status:'Cancelada',  label:'Cancelada',  visible:true }
+  ],
+  diasProxima:        7,
+  ocultarTerminadas:  false
+};
+// Cargar prefs personales del localStorage
+(function() {
+  const lp = localStorage.getItem('plannerPrefs');
+  if (lp) { try { Object.assign(CONFIG, JSON.parse(lp)); } catch(e){} }
+})();
 
 // ═══════════════════════════════════════════════
 // API
@@ -955,6 +1102,7 @@ async function fetchTareas(silent = false) {
     const data = await apiGet();
     if (!data.ok) throw new Error(data.error);
     tareas = data.tareas;
+    if (data.config) loadConfig(data.config);
     render();
     setSyncStatus('ok', 'Sincronizado · ' + new Date().toLocaleTimeString('es-AR', {hour:'2-digit',minute:'2-digit',second:'2-digit'}));
   } catch (err) {
@@ -988,7 +1136,9 @@ function applyFilters() {
   const prio = document.getElementById('filter-prio').value;
   const q    = document.getElementById('search').value.toLowerCase();
 
+  const terminadas = new Set(['Completada','Cancelada']);
   filtered = tareas.filter(t => {
+    if (CONFIG.ocultarTerminadas && currentView === 'kanban' && terminadas.has(t.estado)) return false;
     if (area && !parseList(t.area).includes(area)) return false;
     if (resp && !parseList(t.responsable).includes(resp)) return false;
     if (prio && t.prioridad !== prio) return false;
@@ -1011,6 +1161,84 @@ function applyFilters() {
       return av.localeCompare(bv, 'es') * sortDir;
     });
   }
+}
+
+// ═══════════════════════════════════════════════
+// KANBAN SHELL (estructura de columnas, se regenera al cambiar config)
+// ═══════════════════════════════════════════════
+function areaColor(name) {
+  const i = CONFIG.areas.indexOf(name);
+  return AREA_PALETTE[(i >= 0 ? i : 0) % AREA_PALETTE.length];
+}
+
+function injectAreaStyles() {
+  const old = document.getElementById('dyn-area-styles');
+  if (old) old.remove();
+  const css = CONFIG.areas.map((a, i) => {
+    const clr = AREA_PALETTE[i % AREA_PALETTE.length];
+    const esc = a.replace(/"/g, '\\"');
+    return `.card[data-area="${esc}"]{border-left-color:${clr}}` +
+           `.card-area[data-area="${esc}"],.gs-area-tag[data-area="${esc}"]{background:${clr}}`;
+  }).join('\n');
+  const s = document.createElement('style');
+  s.id = 'dyn-area-styles'; s.textContent = css;
+  document.head.appendChild(s);
+}
+
+const STATUS_CLR = {
+  Pendiente:'var(--pendiente)', 'En curso':'var(--en-curso)',
+  Bloqueada:'var(--bloqueada)', Completada:'var(--completada)', Cancelada:'var(--cancelada)'
+};
+function renderKanbanShell() {
+  injectAreaStyles();
+  const kanban = document.getElementById('kanban');
+  const cols   = CONFIG.kanbanCols.filter(c => c.visible);
+  kanban.innerHTML = cols.map(c => {
+    const clr = STATUS_CLR[c.status] || 'var(--pendiente)';
+    return `<div class="column" data-status="${escapeHtml(c.status)}"
+      style="--col-clr:${clr}">
+      <div class="column-header">
+        <span class="column-title" style="color:${clr}">${escapeHtml(c.label)}</span>
+        <span class="column-count" style="background:${clr}">0</span>
+      </div>
+      <div class="column-body"></div>
+    </div>`;
+  }).join('');
+  attachDropHandlers();
+}
+
+function attachDropHandlers() {
+  document.querySelectorAll('.column').forEach(col => {
+    col.addEventListener('dragover',  e => { e.preventDefault(); col.classList.add('drag-over'); });
+    col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+    col.addEventListener('drop', async e => {
+      e.preventDefault();
+      col.classList.remove('drag-over');
+      if (!draggedRow) return;
+      const newStatus = col.dataset.status;
+      const t = tareas.find(x => x.rowIndex === draggedRow);
+      if (!t || t.estado === newStatus) return;
+      t.estado = newStatus;
+      render();
+      try {
+        const res = await apiPost({ action:'updateField', rowIndex:draggedRow, field:'estado', value:newStatus });
+        if (!res.ok) throw new Error(res.error);
+        toast('Estado actualizado');
+      } catch {
+        toast('Error al guardar', true);
+        fetchTareas();
+      }
+    });
+  });
+}
+
+// loadConfig: aplica la config recibida del Sheet y reconstruye el shell
+function loadConfig(serverCfg) {
+  if (!serverCfg) return;
+  if (serverCfg.areas)        CONFIG.areas        = serverCfg.areas;
+  if (serverCfg.colaboradores) CONFIG.colaboradores = serverCfg.colaboradores;
+  if (serverCfg.kanbanCols)   CONFIG.kanbanCols   = serverCfg.kanbanCols;
+  renderKanbanShell();
 }
 
 // ═══════════════════════════════════════════════
@@ -1243,22 +1471,24 @@ function renderKPIs() {
 }
 
 function renderRespList() {
-  const resps = [...new Set(tareas.flatMap(t => parseList(t.responsable)))].sort((a,b)=>a.localeCompare(b,'es'));
+  // Combinar responsables usados en tareas + colaboradores de CONFIG
+  const fromTasks = tareas.flatMap(t => parseList(t.responsable));
+  const resps = [...new Set([...CONFIG.colaboradores, ...fromTasks])].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
   const sel = document.getElementById('filter-resp');
   const cur = sel.value;
   sel.innerHTML = '<option value="">Todos</option>' + resps.map(r => `<option>${escapeHtml(r)}</option>`).join('');
   sel.value = cur;
   document.getElementById('resp-options').innerHTML = resps.map(r => `<option value="${escapeHtml(r)}">`).join('');
 
-  // Filtro de áreas (desde AREAS configurable)
+  // Filtro de áreas (desde CONFIG)
   const aSel = document.getElementById('filter-area');
   const aCur = aSel.value;
-  aSel.innerHTML = '<option value="">Todas</option>' + AREAS.map(a => `<option>${escapeHtml(a)}</option>`).join('');
+  aSel.innerHTML = '<option value="">Todas</option>' + CONFIG.areas.map(a => `<option>${escapeHtml(a)}</option>`).join('');
   aSel.value = aCur;
 }
 
 // ═══════════════════════════════════════════════
-// DRAG & DROP
+// DRAG & DROP (handlers de tarjeta — columnas se manejan en attachDropHandlers)
 // ═══════════════════════════════════════════════
 function onDragStart(e) {
   draggedRow = parseInt(e.currentTarget.dataset.row);
@@ -1270,28 +1500,6 @@ function onDragEnd(e) {
   document.querySelectorAll('.column').forEach(c => c.classList.remove('drag-over'));
   isDirty = false;
 }
-document.querySelectorAll('.column').forEach(col => {
-  col.addEventListener('dragover',  e => { e.preventDefault(); col.classList.add('drag-over'); });
-  col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
-  col.addEventListener('drop', async e => {
-    e.preventDefault();
-    col.classList.remove('drag-over');
-    if (!draggedRow) return;
-    const newStatus = col.dataset.status;
-    const t = tareas.find(x => x.rowIndex === draggedRow);
-    if (!t || t.estado === newStatus) return;
-    t.estado = newStatus;
-    render();
-    try {
-      const res = await apiPost({ action: 'updateField', rowIndex: draggedRow, field: 'estado', value: newStatus });
-      if (!res.ok) throw new Error(res.error);
-      toast('Estado actualizado');
-    } catch {
-      toast('Error al guardar', true);
-      fetchTareas();
-    }
-  });
-});
 
 // ═══════════════════════════════════════════════
 // MODAL
@@ -1392,11 +1600,13 @@ async function deleteTask() {
 // MULTI: checkboxes de área + tags de responsable
 // ═══════════════════════════════════════════════
 function renderAreaCheckboxes(selected = []) {
-  document.getElementById('f-areas').innerHTML = AREAS.map(a => `
-    <label class="chk">
-      <input type="checkbox" value="${escapeHtml(a)}" ${selected.includes(a) ? 'checked' : ''}>
+  document.getElementById('f-areas').innerHTML = CONFIG.areas.map((a, i) => {
+    const clr = AREA_PALETTE[i % AREA_PALETTE.length];
+    return `<label class="chk" style="${selected.includes(a)?'border-color:'+clr+';background:'+clr+'1a':''}" >
+      <input type="checkbox" value="${escapeHtml(a)}" ${selected.includes(a)?'checked':''} style="accent-color:${clr}">
       ${escapeHtml(a)}
-    </label>`).join('');
+    </label>`;
+  }).join('');
 }
 
 function renderRespTags() {
@@ -1496,8 +1706,8 @@ function dateClass(iso, estado) {
   const today = new Date(); today.setHours(0,0,0,0);
   const d = pdate(iso);
   if (d < today) return 'vencida';
-  const in7 = new Date(today); in7.setDate(in7.getDate()+7);
-  return d <= in7 ? 'proxima' : '';
+  const inN = new Date(today); inN.setDate(inN.getDate() + (CONFIG.diasProxima || 7));
+  return d <= inN ? 'proxima' : '';
 }
 function initials(name) {
   return (name||'?').split(/[\s\/]+/).map(p => p[0]||'').join('').slice(0,2).toUpperCase();
@@ -1513,8 +1723,174 @@ function toast(msg, isError) {
 }
 
 // ═══════════════════════════════════════════════
+// CONFIGURACIÓN / AJUSTES
+// ═══════════════════════════════════════════════
+let cfgKanbanDraft = [];  // copia local al editar
+
+function openSettings(tab = 'areas') {
+  document.querySelectorAll('.cfg-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  ['areas','colabs','kanban','prefs'].forEach(id => {
+    document.getElementById('cfg-' + id).style.display = id === tab ? 'block' : 'none';
+  });
+  if (tab === 'areas')   renderCfgAreas();
+  if (tab === 'colabs')  renderCfgColabs();
+  if (tab === 'kanban')  renderCfgKanban();
+  if (tab === 'prefs')   renderCfgPrefs();
+  document.getElementById('settings-modal').classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('settings-modal').classList.remove('open');
+}
+document.getElementById('settings-modal').addEventListener('click', e => {
+  if (e.target.id === 'settings-modal') closeSettings();
+});
+
+// ── Áreas ──
+function renderCfgAreas() {
+  document.getElementById('cfg-areas-list').innerHTML = CONFIG.areas.map((a, i) => `
+    <div class="cfg-item">
+      <span class="cfg-item-dot" style="background:${AREA_PALETTE[i % AREA_PALETTE.length]}"></span>
+      <input type="text" value="${escapeHtml(a)}" onblur="cfgRenameArea(${i}, this.value)"
+             onkeydown="if(event.key==='Enter')this.blur()">
+      <button class="cfg-item-del" onclick="cfgDeleteArea(${i})" title="Eliminar">✕</button>
+    </div>`).join('');
+}
+function cfgAddArea() {
+  const inp = document.getElementById('cfg-area-new');
+  const name = inp.value.trim();
+  if (!name) return;
+  if (CONFIG.areas.includes(name)) { toast('Esa área ya existe', true); return; }
+  CONFIG.areas.push(name);
+  inp.value = '';
+  syncConfig('areas');
+}
+function cfgRenameArea(i, newName) {
+  newName = newName.trim();
+  if (!newName || CONFIG.areas[i] === newName) return;
+  if (CONFIG.areas.includes(newName)) { renderCfgAreas(); return; }
+  CONFIG.areas[i] = newName;
+  syncConfig('areas');
+}
+function cfgDeleteArea(i) {
+  if (!confirm(`¿Eliminar el área "${CONFIG.areas[i]}"?\nLas tareas que la tengan no se modifican.`)) return;
+  CONFIG.areas.splice(i, 1);
+  syncConfig('areas');
+}
+
+// ── Colaboradores ──
+function renderCfgColabs() {
+  document.getElementById('cfg-colabs-list').innerHTML = CONFIG.colaboradores.length
+    ? CONFIG.colaboradores.map((c, i) => `
+        <div class="cfg-item">
+          <span style="font-size:18px">👤</span>
+          <input type="text" value="${escapeHtml(c)}" onblur="cfgRenameColab(${i}, this.value)"
+                 onkeydown="if(event.key==='Enter')this.blur()">
+          <button class="cfg-item-del" onclick="cfgDeleteColab(${i})" title="Eliminar">✕</button>
+        </div>`).join('')
+    : '<p style="color:var(--ink-soft);font-size:12px;padding:4px 0">Sin colaboradores aún.</p>';
+}
+function cfgAddColab() {
+  const inp = document.getElementById('cfg-colab-new');
+  const name = inp.value.trim();
+  if (!name) return;
+  if (CONFIG.colaboradores.includes(name)) { toast('Ya existe', true); return; }
+  CONFIG.colaboradores.push(name);
+  inp.value = '';
+  syncConfig('colaboradores');
+}
+function cfgRenameColab(i, newName) {
+  newName = newName.trim();
+  if (!newName || CONFIG.colaboradores[i] === newName) return;
+  CONFIG.colaboradores[i] = newName;
+  syncConfig('colaboradores');
+}
+function cfgDeleteColab(i) {
+  CONFIG.colaboradores.splice(i, 1);
+  syncConfig('colaboradores');
+}
+
+// ── Kanban columns ──
+function renderCfgKanban() {
+  cfgKanbanDraft = CONFIG.kanbanCols.map(c => ({ ...c }));
+  renderCfgKanbanList();
+}
+function renderCfgKanbanList() {
+  document.getElementById('cfg-kanban-list').innerHTML = cfgKanbanDraft.map((c, i) => {
+    const clr = STATUS_CLR[c.status] || '#999';
+    return `<div class="cfg-item">
+      <input type="checkbox" class="cfg-item-vis" ${c.visible ? 'checked' : ''}
+             onchange="cfgKanbanDraft[${i}].visible=this.checked">
+      <span class="cfg-item-dot" style="background:${clr}"></span>
+      <input type="text" value="${escapeHtml(c.label)}"
+             onblur="cfgKanbanDraft[${i}].label=this.value.trim()||cfgKanbanDraft[${i}].label"
+             onkeydown="if(event.key==='Enter')this.blur()"
+             style="flex:1">
+      <span style="font-size:10px;color:var(--ink-soft);white-space:nowrap">(${escapeHtml(c.status)})</span>
+      <span class="cfg-item-reorder">
+        <button onclick="cfgMoveKanban(${i},-1)" ${i===0?'disabled':''}>↑</button>
+        <button onclick="cfgMoveKanban(${i},+1)" ${i===cfgKanbanDraft.length-1?'disabled':''}>↓</button>
+      </span>
+    </div>`;
+  }).join('');
+}
+function cfgMoveKanban(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= cfgKanbanDraft.length) return;
+  [cfgKanbanDraft[i], cfgKanbanDraft[j]] = [cfgKanbanDraft[j], cfgKanbanDraft[i]];
+  renderCfgKanbanList();
+}
+function cfgSaveKanban() {
+  // Leer labels actuales del DOM antes de guardar
+  document.querySelectorAll('#cfg-kanban-list .cfg-item input[type="text"]').forEach((inp, i) => {
+    if (inp.value.trim()) cfgKanbanDraft[i].label = inp.value.trim();
+  });
+  CONFIG.kanbanCols = cfgKanbanDraft.map(c => ({ ...c }));
+  syncConfig('kanbanCols');
+  renderKanbanShell();
+  render();
+  toast('Columnas actualizadas');
+}
+
+// ── Preferencias (localStorage) ──
+function renderCfgPrefs() {
+  document.getElementById('pref-dias').value = CONFIG.diasProxima || 7;
+  document.getElementById('pref-ocultar').checked = !!CONFIG.ocultarTerminadas;
+}
+function cfgSavePref(key, value) {
+  CONFIG[key] = value;
+  const prefs = { diasProxima: CONFIG.diasProxima, ocultarTerminadas: CONFIG.ocultarTerminadas };
+  localStorage.setItem('plannerPrefs', JSON.stringify(prefs));
+  render();
+}
+
+// ── Sync al Sheet ──
+async function syncConfig(key) {
+  // Actualizar UI inmediatamente
+  injectAreaStyles();
+  renderRespList();
+  if (key === 'areas')     renderCfgAreas();
+  if (key === 'colabs' || key === 'colaboradores') renderCfgColabs();
+  if (key === 'kanbanCols') { renderKanbanShell(); render(); }
+  // Persistir al Sheet en background
+  try {
+    const value = CONFIG[key === 'colabs' ? 'colaboradores' : key];
+    const res = await apiPost({ action: 'saveConfig', key: key === 'colabs' ? 'colaboradores' : key, value });
+    if (!res.ok) throw new Error(res.error);
+    toast('Configuración guardada');
+  } catch(err) {
+    toast('No se pudo guardar en el Sheet', true);
+    console.error(err);
+  }
+}
+
+// Tecla Enter en inputs de Ajustes
+document.getElementById('cfg-area-new').addEventListener('keydown', e => { if(e.key==='Enter') cfgAddArea(); });
+document.getElementById('cfg-colab-new').addEventListener('keydown', e => { if(e.key==='Enter') cfgAddColab(); });
+
+// ═══════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════
+renderKanbanShell(); // shell con defaults antes de que llegue el fetch
 fetchTareas();
 pollTimer = setInterval(() => fetchTareas(true), POLL_INTERVAL);
 window.addEventListener('beforeunload', () => clearInterval(pollTimer));
