@@ -658,6 +658,56 @@
   }
   .btn-danger:hover { background: var(--alta); color: white; }
 
+  /* ── Multi áreas / responsables ── */
+  .card-areas { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 5px; }
+  .card-areas .card-area { margin-bottom: 0; }
+  .card-area[data-area="General"] { background: var(--area-general); }
+  .card-area[data-area="Negocio"] { background: var(--area-negocio); }
+  .card-area[data-area="PxD"]     { background: var(--area-pxd); }
+  .card-area[data-area="OT"]      { background: var(--area-ot); }
+  .card-resps { display: flex; align-items: center; gap: 4px; min-width: 0; overflow: hidden; }
+  .resp-avatars { display: flex; flex-shrink: 0; }
+  .resp-avatars .resp-avatar { margin-left: -5px; border: 1.5px solid var(--bg-card); }
+  .resp-avatars .resp-avatar:first-child { margin-left: 0; }
+  .card-resp-names {
+    font-size: 10.5px; font-weight: 600; color: var(--ink);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* checkboxes de área en el modal */
+  .chk-group { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chk {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 10px; border: 1px solid var(--line); border-radius: 5px;
+    font-size: 12.5px; cursor: pointer; user-select: none; background: white;
+    transition: all 0.12s;
+  }
+  .chk input { width: auto; margin: 0; cursor: pointer; accent-color: var(--accent); }
+  .chk:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+
+  /* tag-input de responsables */
+  .tag-input {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 5px;
+    border: 1px solid var(--line); border-radius: 4px; padding: 5px 6px;
+    background: white; cursor: text;
+  }
+  .tag-input:focus-within { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .tag-input input {
+    flex: 1; min-width: 90px; border: none; outline: none; padding: 2px;
+    font-size: 13px; font-family: inherit; background: transparent;
+  }
+  .tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--accent-soft); color: var(--accent);
+    font-size: 12px; font-weight: 600; padding: 2px 4px 2px 9px; border-radius: 12px;
+  }
+  .tag-remove {
+    cursor: pointer; font-size: 14px; line-height: 1; color: var(--accent);
+    width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; opacity: 0.6;
+  }
+  .tag-remove:hover { opacity: 1; background: rgba(31,56,100,0.12); }
+
   /* ── Toast ── */
   .toast {
     position: fixed; bottom: 18px; left: 50%;
@@ -719,10 +769,7 @@
   <div class="toolbar-sep"></div>
   <div class="filter-group">
     <label>Área</label>
-    <select id="filter-area">
-      <option value="">Todas</option>
-      <option>General</option><option>Negocio</option><option>PxD</option><option>OT</option>
-    </select>
+    <select id="filter-area"><option value="">Todas</option></select>
   </div>
   <div class="filter-group">
     <label>Resp.</label>
@@ -795,18 +842,17 @@
         <label>Tarea / descripción</label>
         <textarea id="f-tarea" placeholder="¿Qué hay que hacer?"></textarea>
       </div>
-      <div class="field-row">
-        <div class="field">
-          <label>Área</label>
-          <select id="f-area">
-            <option>General</option><option>Negocio</option><option>PxD</option><option>OT</option>
-          </select>
+      <div class="field">
+        <label>Áreas <span style="text-transform:none;font-weight:400;opacity:0.7;">(podés elegir varias)</span></label>
+        <div class="chk-group" id="f-areas"></div>
+      </div>
+      <div class="field">
+        <label>Responsables <span style="text-transform:none;font-weight:400;opacity:0.7;">(Enter o coma para agregar)</span></label>
+        <div class="tag-input" id="f-resp-box" onclick="document.getElementById('f-resp').focus()">
+          <span id="f-resp-tags" style="display:contents;"></span>
+          <input type="text" id="f-resp" placeholder="Ej: LS, MC, JO…" list="resp-options" autocomplete="off">
         </div>
-        <div class="field">
-          <label>Responsable</label>
-          <input type="text" id="f-resp" placeholder="Ej: LS, MC, JO…" list="resp-options">
-          <datalist id="resp-options"></datalist>
-        </div>
+        <datalist id="resp-options"></datalist>
       </div>
       <div class="field-row3">
         <div class="field">
@@ -862,6 +908,8 @@ let filtered = [];
 let draggedRow = null;
 let sortCol = null;
 let sortDir = 1;
+let AREAS = ['General', 'Negocio', 'PxD', 'OT'];
+let respTags = [];   // responsables de la tarea en edición
 
 // ═══════════════════════════════════════════════
 // API
@@ -928,9 +976,9 @@ function applyFilters() {
   const q    = document.getElementById('search').value.toLowerCase();
 
   filtered = tareas.filter(t => {
-    if (area && t.area        !== area) return false;
-    if (resp && t.responsable !== resp) return false;
-    if (prio && t.prioridad   !== prio) return false;
+    if (area && !parseList(t.area).includes(area)) return false;
+    if (resp && !parseList(t.responsable).includes(resp)) return false;
+    if (prio && t.prioridad !== prio) return false;
     if (q && !(
       String(t.tarea       ||'').toLowerCase().includes(q) ||
       String(t.notas       ||'').toLowerCase().includes(q) ||
@@ -975,15 +1023,21 @@ function cardHTML(t) {
   const fecha     = t.fecha ? formatDate(t.fecha) : '';
   const fechaCls  = t.fecha ? dateClass(t.fecha, t.estado) : '';
   const completed = t.estado === 'Completada' || t.estado === 'Cancelada';
-  const ini       = initials(t.responsable);
+  const areas     = parseList(t.area);
+  const resps     = parseList(t.responsable);
+  const areasHTML = areas.length
+    ? areas.map(a => `<span class="card-area" data-area="${escapeHtml(a)}">${escapeHtml(a)}</span>`).join('')
+    : '<span class="card-area">—</span>';
+  const avatars   = resps.map(r => `<span class="resp-avatar" title="${escapeHtml(r)}">${escapeHtml(initials(r))}</span>`).join('');
+  const names     = resps.length ? resps.join(', ') : '—';
   return `<div class="card ${completed?'completed':''}" draggable="true"
-       data-row="${t.rowIndex}" data-area="${escapeHtml(t.area||'')}">
-    <span class="card-area">${escapeHtml(t.area||'—')}</span>
+       data-row="${t.rowIndex}" data-area="${escapeHtml(areas[0]||'')}">
+    <div class="card-areas">${areasHTML}</div>
     <div class="card-title">${escapeHtml(t.tarea||'')}</div>
     <div class="card-meta">
-      <span class="card-resp">
-        <span class="resp-avatar">${escapeHtml(ini)}</span>
-        ${escapeHtml(t.responsable||'—')}
+      <span class="card-resps" title="${escapeHtml(names)}">
+        <span class="resp-avatars">${avatars}</span>
+        <span class="card-resp-names">${escapeHtml(names)}</span>
       </span>
       <span style="display:flex;align-items:center;gap:2px;flex-shrink:0;">
         <span class="card-prio ${escapeHtml(t.prioridad||'Media')}"></span>
@@ -1002,8 +1056,10 @@ function renderTable() {
     const fecha     = t.fecha ? formatDate(t.fecha) : '—';
     const fechaCls  = t.fecha ? dateClass(t.fecha, t.estado) : '';
     const badge     = 'badge badge-' + (t.estado||'').replace(/ /g, '-');
+    const areasHTML = parseList(t.area).map(a =>
+      `<span class="card-area" data-area="${escapeHtml(a)}" style="margin:0 3px 0 0">${escapeHtml(a)}</span>`).join('');
     return `<tr class="${completed?'completed':''}" onclick="openModal(${t.rowIndex})">
-      <td><span class="card-area" style="margin:0">${escapeHtml(t.area||'')}</span></td>
+      <td><span style="display:flex;flex-wrap:wrap;gap:2px">${areasHTML}</span></td>
       <td>${escapeHtml(t.tarea||'')}</td>
       <td>${escapeHtml(t.responsable||'')}</td>
       <td><span class="${fechaCls ? 'card-fecha '+fechaCls : ''}">${fecha}</span></td>
@@ -1101,7 +1157,8 @@ function renderGantt() {
     const sx = t.fechaInicio ? dx(t.fechaInicio) : null;
     const ex = t.fecha       ? dx(t.fecha)       : null;
     const statusKey = (t.estado||'Pendiente').replace(/ /g, '-');
-    const ac  = areaClr[t.area] || 'var(--ink-soft)';
+    const firstArea = parseList(t.area)[0] || '';
+    const ac  = areaClr[firstArea] || 'var(--ink-soft)';
 
     let barHTML = '';
     if (sx !== null && ex !== null) {
@@ -1171,12 +1228,18 @@ function renderKPIs() {
 }
 
 function renderRespList() {
-  const resps = [...new Set(tareas.map(t => t.responsable).filter(Boolean))].sort();
+  const resps = [...new Set(tareas.flatMap(t => parseList(t.responsable)))].sort((a,b)=>a.localeCompare(b,'es'));
   const sel = document.getElementById('filter-resp');
   const cur = sel.value;
   sel.innerHTML = '<option value="">Todos</option>' + resps.map(r => `<option>${escapeHtml(r)}</option>`).join('');
   sel.value = cur;
   document.getElementById('resp-options').innerHTML = resps.map(r => `<option value="${escapeHtml(r)}">`).join('');
+
+  // Filtro de áreas (desde AREAS configurable)
+  const aSel = document.getElementById('filter-area');
+  const aCur = aSel.value;
+  aSel.innerHTML = '<option value="">Todas</option>' + AREAS.map(a => `<option>${escapeHtml(a)}</option>`).join('');
+  aSel.value = aCur;
 }
 
 // ═══════════════════════════════════════════════
@@ -1228,19 +1291,22 @@ function openModal(rowIndex) {
     const t = tareas.find(x => x.rowIndex === rowIndex);
     if (!t) return;
     document.getElementById('f-tarea'      ).value = t.tarea        || '';
-    document.getElementById('f-area'       ).value = t.area         || 'General';
-    document.getElementById('f-resp'       ).value = t.responsable  || '';
+    renderAreaCheckboxes(parseList(t.area));
+    respTags = parseList(t.responsable);
     document.getElementById('f-fecha-inicio').value = t.fechaInicio || '';
     document.getElementById('f-fecha'      ).value = t.fecha        || '';
     document.getElementById('f-prio'       ).value = t.prioridad    || 'Media';
     document.getElementById('f-estado'     ).value = t.estado       || 'Pendiente';
     document.getElementById('f-notas'      ).value = t.notas        || '';
   } else {
-    ['f-tarea','f-resp','f-fecha-inicio','f-fecha','f-notas'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('f-area'  ).value = 'General';
+    ['f-tarea','f-fecha-inicio','f-fecha','f-notas'].forEach(id => document.getElementById(id).value = '');
+    renderAreaCheckboxes(['General']);
+    respTags = [];
     document.getElementById('f-prio'  ).value = 'Media';
     document.getElementById('f-estado').value = 'Pendiente';
   }
+  document.getElementById('f-resp').value = '';
+  renderRespTags();
   document.getElementById('modal').classList.add('open');
   setTimeout(() => document.getElementById('f-tarea').focus(), 50);
 }
@@ -1252,10 +1318,13 @@ function closeModal() {
 }
 
 async function saveTask() {
+  // si quedó texto sin "enterear" en el input de responsables, lo agregamos
+  commitRespInput();
+  const areasSel = [...document.querySelectorAll('#f-areas input:checked')].map(c => c.value);
   const tarea = {
     tarea:       document.getElementById('f-tarea'       ).value.trim(),
-    area:        document.getElementById('f-area'        ).value,
-    responsable: document.getElementById('f-resp'        ).value.trim(),
+    area:        areasSel.join(', '),
+    responsable: respTags.join(', '),
     fechaInicio: document.getElementById('f-fecha-inicio').value,
     fecha:       document.getElementById('f-fecha'       ).value,
     prioridad:   document.getElementById('f-prio'        ).value,
@@ -1296,6 +1365,56 @@ async function deleteTask() {
 }
 
 // ═══════════════════════════════════════════════
+// MULTI: checkboxes de área + tags de responsable
+// ═══════════════════════════════════════════════
+function renderAreaCheckboxes(selected = []) {
+  document.getElementById('f-areas').innerHTML = AREAS.map(a => `
+    <label class="chk">
+      <input type="checkbox" value="${escapeHtml(a)}" ${selected.includes(a) ? 'checked' : ''}>
+      ${escapeHtml(a)}
+    </label>`).join('');
+}
+
+function renderRespTags() {
+  document.getElementById('f-resp-tags').innerHTML = respTags.map((r, i) => `
+    <span class="tag">${escapeHtml(r)}<span class="tag-remove" onclick="removeRespTag(${i})">×</span></span>`).join('');
+}
+function addRespTag(name) {
+  name = name.trim();
+  if (name && !respTags.includes(name)) respTags.push(name);
+  renderRespTags();
+}
+function removeRespTag(i) {
+  respTags.splice(i, 1);
+  renderRespTags();
+  document.getElementById('f-resp').focus();
+}
+function commitRespInput() {
+  const inp = document.getElementById('f-resp');
+  if (inp.value.trim()) { addRespTag(inp.value); inp.value = ''; }
+}
+
+(function setupRespInput() {
+  const inp = document.getElementById('f-resp');
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      commitRespInput();
+    } else if (e.key === 'Backspace' && !inp.value && respTags.length) {
+      removeRespTag(respTags.length - 1);
+    }
+  });
+  // al elegir una sugerencia del datalist o pegar con coma
+  inp.addEventListener('input', () => {
+    if (inp.value.includes(',')) {
+      inp.value.split(',').forEach(p => addRespTag(p));
+      inp.value = '';
+    }
+  });
+  inp.addEventListener('blur', commitRespInput);
+})();
+
+// ═══════════════════════════════════════════════
 // VISTAS Y FILTROS
 // ═══════════════════════════════════════════════
 document.querySelectorAll('.view-switch button').forEach(b => {
@@ -1321,6 +1440,10 @@ document.getElementById('modal' ).addEventListener('click', e => { if (e.target.
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c =>
     ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+// "Negocio, PxD" → ["Negocio","PxD"]. Compatible con dato viejo de 1 solo valor.
+function parseList(s) {
+  return String(s ?? '').split(',').map(x => x.trim()).filter(Boolean);
 }
 function formatDate(iso) {
   if (!iso) return '';
