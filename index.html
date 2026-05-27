@@ -196,35 +196,46 @@
 
   /* ── Kanban ── */
   .kanban {
-    display: grid;
-    grid-template-columns: repeat(5,1fr);
+    display: flex;
     gap: 9px;
-    min-height: 46vh;
+    min-height: 50vh;
+    overflow-x: auto;
+    align-items: stretch;
+    padding-bottom: 4px;
   }
-  @media (max-width: 1200px) { .kanban { grid-template-columns: repeat(2,1fr); } }
-  @media (max-width: 700px)  { .kanban { grid-template-columns: 1fr; } }
   .column {
+    flex: 1 1 200px;         /* crecen para repartir espacio libre */
+    min-width: 150px;
     background: rgba(255,255,255,0.5);
     border: 1px solid var(--line);
     border-radius: 6px;
-    padding: 9px;
-    min-height: 140px;
-    transition: background 0.15s;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 195px);
+    position: relative;
+    transition: background 0.15s, border-color 0.15s;
   }
-  .column.drag-over { background: var(--accent-soft); border-color: var(--accent); }
+  .column.drag-over         { background: var(--accent-soft); border-color: var(--accent); }
+  .column.col-dragging-over { outline: 2px dashed var(--accent); outline-offset: -2px; }
   .column-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 2px 3px 7px;
+    gap: 4px;
+    padding: 2px 2px 6px;
     border-bottom: 1px solid var(--line);
-    margin-bottom: 7px;
+    margin-bottom: 6px;
+    cursor: grab;
+    user-select: none;
+    flex-shrink: 0;
   }
+  .column-header:active { cursor: grabbing; }
   .column-title {
     font-size: 10.5px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.7px;
+    flex: 1;
   }
   .column-count {
     background: var(--ink);
@@ -236,6 +247,14 @@
     min-width: 18px;
     text-align: center;
   }
+  .column-hide {
+    background: none; border: none; cursor: pointer; padding: 0 2px;
+    font-size: 12px; color: transparent; line-height: 1; border-radius: 3px;
+    transition: color 0.15s, background 0.15s; flex-shrink: 0;
+  }
+  .column-header:hover .column-hide { color: var(--ink-soft); }
+  .column-hide:hover { color: var(--alta) !important; background: var(--vencida-bg); }
+  .column-body { flex: 1; overflow-y: auto; min-height: 60px; }
   .column[data-status="Pendiente"]  .column-title { color: var(--pendiente); }
   .column[data-status="Pendiente"]  .column-count { background: var(--pendiente); }
   .column[data-status="En curso"]   .column-title { color: var(--en-curso); }
@@ -247,19 +266,31 @@
   .column[data-status="Cancelada"]  .column-title { color: var(--cancelada); }
   .column[data-status="Cancelada"]  .column-count { background: var(--cancelada); }
 
+  /* Resize handle */
+  .col-resize {
+    position: absolute;
+    right: -4px; top: 0; bottom: 0;
+    width: 8px;
+    cursor: col-resize;
+    z-index: 5;
+    border-radius: 0 4px 4px 0;
+    transition: background 0.15s;
+  }
+  .col-resize:hover, .col-resize.resizing { background: rgba(31,56,100,0.18); }
+
   /* ── Card ── */
   .card {
     background: var(--bg-card);
     border: 1px solid var(--line);
-    border-radius: 5px;
-    padding: 8px 9px;
-    margin-bottom: 5px;
+    border-radius: 4px;
+    padding: 6px 7px;
+    margin-bottom: 4px;
     cursor: grab;
-    transition: transform 0.12s, box-shadow 0.15s;
+    transition: transform 0.1s, box-shadow 0.12s;
     position: relative;
     border-left: 3px solid var(--pendiente);
   }
-  .card:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.08); transform: translateY(-1px); }
+  .card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.09); transform: translateY(-1px); }
   .card:active { cursor: grabbing; }
   .card.dragging { opacity: 0.35; }
   .card[data-area="General"]  { border-left-color: var(--area-general); }
@@ -269,26 +300,26 @@
   .card-area {
     display: inline-block;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 8.5px;
+    font-size: 8px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 1px 5px;
+    letter-spacing: 0.4px;
+    padding: 1px 4px;
     border-radius: 2px;
     background: var(--ink);
     color: white;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
   }
   .card[data-area="General"]  .card-area { background: var(--area-general); }
   .card[data-area="Negocio"]  .card-area { background: var(--area-negocio); }
   .card[data-area="PxD"]      .card-area { background: var(--area-pxd); }
   .card[data-area="OT"]       .card-area { background: var(--area-ot); }
   .card-title {
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 500;
-    line-height: 1.3;
+    line-height: 1.25;
     color: var(--ink);
-    margin-bottom: 5px;
+    margin-bottom: 4px;
   }
   .card-meta {
     display: flex;
@@ -1189,22 +1220,37 @@ const STATUS_CLR = {
   Pendiente:'var(--pendiente)', 'En curso':'var(--en-curso)',
   Bloqueada:'var(--bloqueada)', Completada:'var(--completada)', Cancelada:'var(--cancelada)'
 };
+// ── Ancho de columnas (localStorage) ──
+const COL_WIDTHS_KEY = 'kanbanColWidths';
+function loadColWidths()   { try { return JSON.parse(localStorage.getItem(COL_WIDTHS_KEY)||'{}'); } catch(e){ return {}; } }
+function saveColWidth(s,w) { const m=loadColWidths(); m[s]=Math.round(w); localStorage.setItem(COL_WIDTHS_KEY,JSON.stringify(m)); }
+function clearColWidth(s)  { const m=loadColWidths(); delete m[s]; localStorage.setItem(COL_WIDTHS_KEY,JSON.stringify(m)); }
+
 function renderKanbanShell() {
   injectAreaStyles();
   const kanban = document.getElementById('kanban');
   const cols   = CONFIG.kanbanCols.filter(c => c.visible);
+  const widths = loadColWidths();
+
   kanban.innerHTML = cols.map(c => {
-    const clr = STATUS_CLR[c.status] || 'var(--pendiente)';
-    return `<div class="column" data-status="${escapeHtml(c.status)}"
-      style="--col-clr:${clr}">
-      <div class="column-header">
+    const clr   = STATUS_CLR[c.status] || 'var(--pendiente)';
+    const w     = widths[c.status];
+    const flex  = w ? `flex:0 0 ${w}px` : '';
+    return `<div class="column" data-status="${escapeHtml(c.status)}" style="${flex}">
+      <div class="column-header" draggable="true">
         <span class="column-title" style="color:${clr}">${escapeHtml(c.label)}</span>
         <span class="column-count" style="background:${clr}">0</span>
+        <button class="column-hide" title="Ocultar columna"
+                onclick="hideColumn('${escapeHtml(c.status)}')">✕</button>
       </div>
       <div class="column-body"></div>
+      <div class="col-resize" title="Arrastrá para redimensionar · doble clic para reiniciar"></div>
     </div>`;
   }).join('');
+
   attachDropHandlers();
+  attachColResize();
+  attachColReorder();
 }
 
 function attachDropHandlers() {
@@ -1230,6 +1276,108 @@ function attachDropHandlers() {
       }
     });
   });
+}
+
+// ── Resize de columnas ──
+function attachColResize() {
+  document.querySelectorAll('.col-resize').forEach(handle => {
+    const col = handle.closest('.column');
+
+    handle.addEventListener('mousedown', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      const startX = e.clientX;
+      const startW = col.getBoundingClientRect().width;
+      handle.classList.add('resizing');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+
+      function onMove(e) {
+        const newW = Math.max(150, startW + e.clientX - startX);
+        col.style.flex = `0 0 ${newW}px`;
+      }
+      function onUp() {
+        handle.classList.remove('resizing');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        saveColWidth(col.dataset.status, col.getBoundingClientRect().width);
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+
+    handle.addEventListener('dblclick', e => {
+      e.stopPropagation();
+      col.style.flex = '';
+      clearColWidth(col.dataset.status);
+      toast('Ancho reiniciado');
+    });
+  });
+}
+
+// ── Reordenar columnas arrastrando el header ──
+let draggedColStatus = null;
+
+function attachColReorder() {
+  document.querySelectorAll('.column-header').forEach(hdr => {
+    const col = hdr.closest('.column');
+
+    hdr.addEventListener('dragstart', e => {
+      // distinguir del drag de tarjetas: marcar con un tipo
+      draggedColStatus = col.dataset.status;
+      draggedRow = null;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', 'col:' + draggedColStatus);
+      setTimeout(() => col.style.opacity = '0.5', 0);
+    });
+
+    hdr.addEventListener('dragend', () => {
+      col.style.opacity = '';
+      draggedColStatus = null;
+      document.querySelectorAll('.column').forEach(c => c.classList.remove('col-dragging-over'));
+    });
+
+    col.addEventListener('dragover', e => {
+      if (!draggedColStatus) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      document.querySelectorAll('.column').forEach(c => c.classList.remove('col-dragging-over'));
+      if (col.dataset.status !== draggedColStatus) col.classList.add('col-dragging-over');
+    });
+
+    col.addEventListener('dragleave', () => col.classList.remove('col-dragging-over'));
+
+    col.addEventListener('drop', e => {
+      if (!draggedColStatus) return;
+      e.preventDefault();
+      col.classList.remove('col-dragging-over');
+      const from = draggedColStatus;
+      const to   = col.dataset.status;
+      if (from === to) return;
+      const arr  = CONFIG.kanbanCols;
+      const fi   = arr.findIndex(c => c.status === from);
+      const ti   = arr.findIndex(c => c.status === to);
+      if (fi < 0 || ti < 0) return;
+      const [moved] = arr.splice(fi, 1);
+      arr.splice(ti, 0, moved);
+      draggedColStatus = null;
+      renderKanbanShell();
+      render();
+      syncConfig('kanbanCols');
+    });
+  });
+}
+
+// ── Ocultar columna (botón ✕) ──
+function hideColumn(status) {
+  const col = CONFIG.kanbanCols.find(c => c.status === status);
+  if (col) col.visible = false;
+  renderKanbanShell();
+  render();
+  syncConfig('kanbanCols');
+  toast(`Columna "${col?.label || status}" ocultada — reactivala en ⚙ Ajustes › Kanban`);
 }
 
 // loadConfig: aplica la config recibida del Sheet y reconstruye el shell
