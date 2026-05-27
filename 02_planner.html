@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📋 Planner de Seguimiento</title>
+
+<!-- ════════════════════════════════════════════════════════════════
+     ⚠ PASO ÚNICO DE CONFIGURACIÓN
+     Pegá acá abajo la URL que te dio Google Apps Script al implementar.
+     (Termina en /exec)
+     ════════════════════════════════════════════════════════════════ -->
+<script>
+  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwja3KSbTCjVOObcuA9O3gM5CSt_0zQbRR3RfLIDvHrkZccmYAgNkL-2rioJy7t-oBy/exec";
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #F5F2EC;
+    --bg-card: #FFFFFF;
+    --ink: #1A1A1A;
+    --ink-soft: #6B6B6B;
+    --line: #E8E2D6;
+    --accent: #1F3864;
+    --accent-soft: #E8EEF7;
+
+    --pendiente: #B0B0B0;
+    --en-curso: #2E7DD7;
+    --bloqueada: #E8A33C;
+    --completada: #2E9D5C;
+    --cancelada: #C0C0C0;
+
+    --alta: #C13B3B;
+    --media: #D89D2F;
+    --baja: #6B9D5C;
+
+    --area-general: #6B6B8F;
+    --area-negocio: #2E7DD7;
+    --area-pxd: #2E9D5C;
+    --area-ot: #C13B3B;
+
+    --vencida-bg: #FCE8E6;
+    --vencida-border: #C13B3B;
+    --proxima-bg: #FFF4D6;
+    --proxima-border: #D89D2F;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 24px 32px 60px;
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(31, 56, 100, 0.04) 0%, transparent 50%),
+      radial-gradient(circle at 80% 90%, rgba(193, 59, 59, 0.03) 0%, transparent 50%);
+  }
+
+  /* ───── Header ───── */
+  header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding-bottom: 18px;
+    border-bottom: 2px solid var(--ink);
+    margin-bottom: 28px;
+  }
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 42px;
+    letter-spacing: -1.5px;
+    line-height: 1;
+  }
+  h1 .accent {
+    font-style: italic;
+    color: var(--accent);
+    font-weight: 400;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .sync-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sync-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--completada);
+    box-shadow: 0 0 0 0 rgba(46, 157, 92, 0.5);
+    animation: pulse 2s infinite;
+  }
+  .sync-dot.error { background: var(--alta); animation: none; }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(46, 157, 92, 0.5); }
+    70% { box-shadow: 0 0 0 8px rgba(46, 157, 92, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(46, 157, 92, 0); }
+  }
+
+  /* ───── KPIs ───── */
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .kpi {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 16px;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .kpi:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+  .kpi-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+  .kpi-value {
+    font-family: 'Fraunces', serif;
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 1.1;
+    margin-top: 4px;
+  }
+  .kpi-value.alert { color: var(--alta); }
+  .kpi-value.warn { color: var(--bloqueada); }
+  .kpi-value.ok { color: var(--completada); }
+
+  /* ───── Toolbar ───── */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+  .view-switch {
+    display: flex;
+    background: var(--bg);
+    border-radius: 6px;
+    padding: 3px;
+    border: 1px solid var(--line);
+  }
+  .view-switch button {
+    padding: 6px 14px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    border-radius: 4px;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .view-switch button.active {
+    background: var(--ink);
+    color: white;
+  }
+  .filter-group { display: flex; align-items: center; gap: 8px; }
+  .filter-group label {
+    font-size: 11px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+  select, input[type="text"] {
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    font-size: 13px;
+    font-family: inherit;
+    background: white;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  select:focus, input[type="text"]:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  #search { width: 220px; cursor: text; }
+
+  .btn-primary {
+    margin-left: auto;
+    background: var(--ink);
+    color: white;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 5px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+  .btn-primary:hover { background: var(--accent); }
+
+  /* ───── Kanban ───── */
+  .kanban {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+    min-height: 60vh;
+  }
+  @media (max-width: 1200px) {
+    .kanban { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 700px) {
+    .kanban { grid-template-columns: 1fr; }
+  }
+  .column {
+    background: rgba(255,255,255,0.5);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px;
+    min-height: 200px;
+    transition: background 0.15s;
+  }
+  .column.drag-over { background: var(--accent-soft); border-color: var(--accent); }
+  .column-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 6px 10px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 10px;
+  }
+  .column-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+  .column-count {
+    background: var(--ink);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    min-width: 22px;
+    text-align: center;
+  }
+  .column[data-status="Pendiente"] .column-title { color: var(--pendiente); }
+  .column[data-status="Pendiente"] .column-count { background: var(--pendiente); }
+  .column[data-status="En curso"] .column-title { color: var(--en-curso); }
+  .column[data-status="En curso"] .column-count { background: var(--en-curso); }
+  .column[data-status="Bloqueada"] .column-title { color: var(--bloqueada); }
+  .column[data-status="Bloqueada"] .column-count { background: var(--bloqueada); }
+  .column[data-status="Completada"] .column-title { color: var(--completada); }
+  .column[data-status="Completada"] .column-count { background: var(--completada); }
+  .column[data-status="Cancelada"] .column-title { color: var(--cancelada); }
+  .column[data-status="Cancelada"] .column-count { background: var(--cancelada); }
+
+  /* ───── Card ───── */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 11px 12px;
+    margin-bottom: 8px;
+    cursor: grab;
+    transition: transform 0.12s, box-shadow 0.15s, border-color 0.15s;
+    position: relative;
+    border-left: 3px solid var(--pendiente);
+  }
+  .card:hover {
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    transform: translateY(-1px);
+  }
+  .card:active { cursor: grabbing; }
+  .card.dragging { opacity: 0.4; }
+  .card[data-area="General"] { border-left-color: var(--area-general); }
+  .card[data-area="Negocio"] { border-left-color: var(--area-negocio); }
+  .card[data-area="PxD"] { border-left-color: var(--area-pxd); }
+  .card[data-area="OT"] { border-left-color: var(--area-ot); }
+
+  .card-area {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    background: var(--ink);
+    color: white;
+    margin-bottom: 7px;
+  }
+  .card[data-area="General"] .card-area { background: var(--area-general); }
+  .card[data-area="Negocio"] .card-area { background: var(--area-negocio); }
+  .card[data-area="PxD"] .card-area { background: var(--area-pxd); }
+  .card[data-area="OT"] .card-area { background: var(--area-ot); }
+
+  .card-title {
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.35;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .card-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+  .card-resp {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .card-resp::before {
+    content: '';
+    display: inline-block;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--accent);
+    text-align: center;
+    line-height: 18px;
+    font-size: 9px;
+    font-weight: 700;
+  }
+  .card-fecha {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: rgba(0,0,0,0.04);
+  }
+  .card-fecha.vencida {
+    background: var(--vencida-bg);
+    color: var(--vencida-border);
+    font-weight: 600;
+  }
+  .card-fecha.proxima {
+    background: var(--proxima-bg);
+    color: #8B6914;
+    font-weight: 600;
+  }
+  .card-prio {
+    width: 6px; height: 6px; border-radius: 50%;
+    display: inline-block;
+    margin-right: 4px;
+  }
+  .card-prio.Alta { background: var(--alta); }
+  .card-prio.Media { background: var(--media); }
+  .card-prio.Baja { background: var(--baja); }
+  .card.completed { opacity: 0.55; }
+  .card.completed .card-title { text-decoration: line-through; }
+
+  /* ───── Tabla ───── */
+  .table-view { display: none; background: var(--bg-card); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .table-view.active { display: block; }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left;
+    padding: 12px 14px;
+    background: var(--ink);
+    color: white;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+    vertical-align: top;
+  }
+  tr:hover { background: rgba(0,0,0,0.02); }
+  tr.completed { opacity: 0.6; }
+  tr.completed td { text-decoration: line-through; }
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .badge-estado-Pendiente { background: rgba(176,176,176,0.2); color: #555; }
+  .badge-estado-En.curso, .badge-estado-En\\ curso { background: rgba(46,125,215,0.15); color: var(--en-curso); }
+  .badge-estado-Bloqueada { background: rgba(232,163,60,0.18); color: #8B6914; }
+  .badge-estado-Completada { background: rgba(46,157,92,0.15); color: var(--completada); }
+  .badge-estado-Cancelada { background: rgba(192,192,192,0.3); color: #777; text-decoration: line-through; }
+
+  /* ───── Modal ───── */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+    backdrop-filter: blur(2px);
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--bg-card);
+    border-radius: 10px;
+    width: 100%;
+    max-width: 540px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+  }
+  .modal-header {
+    padding: 20px 24px 12px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .modal-title {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--ink-soft);
+    padding: 0;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    transition: background 0.15s;
+  }
+  .modal-close:hover { background: rgba(0,0,0,0.06); }
+  .modal-body { padding: 20px 24px; }
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--ink-soft);
+    font-weight: 600;
+    margin-bottom: 5px;
+  }
+  .field input, .field select, .field textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    font-size: 14px;
+    font-family: inherit;
+    background: white;
+  }
+  .field textarea { resize: vertical; min-height: 70px; font-size: 13px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal-footer {
+    padding: 14px 24px 20px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    border-top: 1px solid var(--line);
+  }
+  .btn-secondary {
+    background: white;
+    border: 1px solid var(--line);
+    padding: 9px 18px;
+    border-radius: 5px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 500;
+  }
+  .btn-secondary:hover { background: var(--bg); }
+  .btn-danger {
+    background: white;
+    color: var(--alta);
+    border: 1px solid var(--alta);
+    padding: 9px 14px;
+    border-radius: 5px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 500;
+  }
+  .btn-danger:hover { background: var(--alta); color: white; }
+
+  /* ───── Toast ───── */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--ink);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 200;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.error { background: var(--alta); }
+
+  /* ───── Setup warning ───── */
+  .setup-warning {
+    background: #FFF4D6;
+    border: 1px solid #D89D2F;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .setup-warning b { color: #8B6914; }
+  .setup-warning code {
+    background: rgba(0,0,0,0.06);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--ink-soft);
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Planner <span class="accent">colaborativo</span></h1>
+  <div class="header-right">
+    <span id="task-count">— tareas</span>
+    <div class="sync-indicator">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-status">Conectando…</span>
+    </div>
+  </div>
+</header>
+
+<div id="setup-warning" class="setup-warning" style="display:none;">
+  <b>⚠ Falta configurar</b><br>
+  Pegá la URL que te dio Google Apps Script en el archivo HTML, donde dice
+  <code>PEGA_ACA_TU_URL_DE_GOOGLE_APPS_SCRIPT</code>. Mirá la guía de instalación.
+</div>
+
+<div class="kpis">
+  <div class="kpi"><div class="kpi-label">Total</div><div class="kpi-value" id="kpi-total">0</div></div>
+  <div class="kpi"><div class="kpi-label">Pendientes</div><div class="kpi-value" id="kpi-pendientes">0</div></div>
+  <div class="kpi"><div class="kpi-label">En curso</div><div class="kpi-value" id="kpi-curso">0</div></div>
+  <div class="kpi"><div class="kpi-label">Vencidas</div><div class="kpi-value alert" id="kpi-vencidas">0</div></div>
+  <div class="kpi"><div class="kpi-label">Esta semana</div><div class="kpi-value warn" id="kpi-semana">0</div></div>
+  <div class="kpi"><div class="kpi-label">Completadas</div><div class="kpi-value ok" id="kpi-done">0</div></div>
+</div>
+
+<div class="toolbar">
+  <div class="view-switch">
+    <button class="active" data-view="kanban">Kanban</button>
+    <button data-view="tabla">Tabla</button>
+  </div>
+  <div class="filter-group">
+    <label>Área</label>
+    <select id="filter-area">
+      <option value="">Todas</option>
+      <option>General</option><option>Negocio</option><option>PxD</option><option>OT</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Responsable</label>
+    <select id="filter-resp"><option value="">Todos</option></select>
+  </div>
+  <div class="filter-group">
+    <label>Prioridad</label>
+    <select id="filter-prio">
+      <option value="">Todas</option>
+      <option>Alta</option><option>Media</option><option>Baja</option>
+    </select>
+  </div>
+  <input type="text" id="search" placeholder="Buscar tarea…">
+  <button class="btn-primary" onclick="openModal()">+ Nueva tarea</button>
+</div>
+
+<div class="kanban" id="kanban">
+  <div class="column" data-status="Pendiente">
+    <div class="column-header"><span class="column-title">Pendiente</span><span class="column-count">0</span></div>
+    <div class="column-body"></div>
+  </div>
+  <div class="column" data-status="En curso">
+    <div class="column-header"><span class="column-title">En curso</span><span class="column-count">0</span></div>
+    <div class="column-body"></div>
+  </div>
+  <div class="column" data-status="Bloqueada">
+    <div class="column-header"><span class="column-title">Bloqueada</span><span class="column-count">0</span></div>
+    <div class="column-body"></div>
+  </div>
+  <div class="column" data-status="Completada">
+    <div class="column-header"><span class="column-title">Completada</span><span class="column-count">0</span></div>
+    <div class="column-body"></div>
+  </div>
+  <div class="column" data-status="Cancelada">
+    <div class="column-header"><span class="column-title">Cancelada</span><span class="column-count">0</span></div>
+    <div class="column-body"></div>
+  </div>
+</div>
+
+<div class="table-view" id="table-view">
+  <table>
+    <thead>
+      <tr>
+        <th>Área</th><th>Tarea</th><th>Responsable</th><th>Fecha</th>
+        <th>Estado</th><th>Prioridad</th><th>Notas</th>
+      </tr>
+    </thead>
+    <tbody id="table-body"></tbody>
+  </table>
+</div>
+
+<!-- Modal -->
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Nueva tarea</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Tarea / descripción</label>
+        <textarea id="f-tarea" placeholder="¿Qué hay que hacer?"></textarea>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Área</label>
+          <select id="f-area">
+            <option>General</option><option>Negocio</option><option>PxD</option><option>OT</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Responsable</label>
+          <input type="text" id="f-resp" placeholder="Ej: LS, MC, JO…" list="resp-options">
+          <datalist id="resp-options"></datalist>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Fecha límite</label>
+          <input type="date" id="f-fecha">
+        </div>
+        <div class="field">
+          <label>Prioridad</label>
+          <select id="f-prio">
+            <option>Alta</option><option selected>Media</option><option>Baja</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Estado</label>
+        <select id="f-estado">
+          <option>Pendiente</option><option>En curso</option><option>Bloqueada</option>
+          <option>Completada</option><option>Cancelada</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Notas</label>
+        <textarea id="f-notas" placeholder="Comentarios, contexto…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-danger" id="btn-delete" onclick="deleteTask()" style="display:none;">Eliminar</button>
+      <div style="display:flex; gap:10px; margin-left:auto;">
+        <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
+        <button class="btn-primary" onclick="saveTask()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// ESTADO Y CONFIG
+// ════════════════════════════════════════════════════════════════
+const POLL_INTERVAL = 10000; // 10 segundos
+let tareas = [];
+let editingRowIndex = null;
+let pollTimer = null;
+let currentView = 'kanban';
+let isDirty = false; // si el usuario está editando, no refrescamos
+
+// ════════════════════════════════════════════════════════════════
+// API
+// ════════════════════════════════════════════════════════════════
+async function apiGet() {
+  const res = await fetch(GOOGLE_SCRIPT_URL, { method: 'GET' });
+  return res.json();
+}
+async function apiPost(payload) {
+  // Apps Script no soporta CORS preflight con Content-Type JSON,
+  // usamos text/plain para evitar el preflight.
+  const res = await fetch(GOOGLE_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload),
+  });
+  return res.json();
+}
+
+// ════════════════════════════════════════════════════════════════
+// FETCH Y RENDER
+// ════════════════════════════════════════════════════════════════
+async function fetchTareas(silent = false) {
+  if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes('PEGA_ACA')) {
+    document.getElementById('setup-warning').style.display = 'block';
+    setSyncStatus('error', 'Sin configurar');
+    return;
+  }
+  if (isDirty && silent) return; // no pisar mientras editan
+
+  try {
+    if (!silent) setSyncStatus('syncing', 'Sincronizando…');
+    const data = await apiGet();
+    if (!data.ok) throw new Error(data.error);
+    tareas = data.tareas;
+    render();
+    setSyncStatus('ok', 'Sincronizado · ' + new Date().toLocaleTimeString('es-AR', {hour:'2-digit',minute:'2-digit',second:'2-digit'}));
+  } catch (err) {
+    console.error(err);
+    setSyncStatus('error', 'Error de conexión');
+    if (!silent) toast('No se pudo conectar al Sheet', true);
+  }
+}
+
+function setSyncStatus(state, text) {
+  const dot = document.getElementById('sync-dot');
+  document.getElementById('sync-status').textContent = text;
+  dot.classList.toggle('error', state === 'error');
+}
+
+function render() {
+  applyFilters();
+  renderKanban();
+  renderTable();
+  renderKPIs();
+  renderRespList();
+  document.getElementById('task-count').textContent = tareas.length + ' tareas';
+}
+
+let filtered = [];
+function applyFilters() {
+  const area = document.getElementById('filter-area').value;
+  const resp = document.getElementById('filter-resp').value;
+  const prio = document.getElementById('filter-prio').value;
+  const q = document.getElementById('search').value.toLowerCase();
+  filtered = tareas.filter(t => {
+    if (area && t.area !== area) return false;
+    if (resp && t.responsable !== resp) return false;
+    if (prio && t.prioridad !== prio) return false;
+    if (q && !(String(t.tarea).toLowerCase().includes(q) ||
+                String(t.notas||'').toLowerCase().includes(q) ||
+                String(t.responsable||'').toLowerCase().includes(q))) return false;
+    return true;
+  });
+}
+
+function renderKanban() {
+  document.querySelectorAll('.column').forEach(col => {
+    const status = col.dataset.status;
+    const body = col.querySelector('.column-body');
+    const items = filtered.filter(t => (t.estado || 'Pendiente') === status);
+    body.innerHTML = items.length === 0
+      ? '<div class="empty-state">Sin tareas</div>'
+      : items.map(cardHTML).join('');
+    col.querySelector('.column-count').textContent = items.length;
+  });
+  // attach drag handlers
+  document.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('dragstart', onDragStart);
+    card.addEventListener('dragend', onDragEnd);
+    card.addEventListener('click', () => openModal(parseInt(card.dataset.row)));
+  });
+}
+
+function cardHTML(t) {
+  const fecha = t.fecha ? formatDate(t.fecha) : '';
+  const fechaCls = t.fecha ? dateClass(t.fecha, t.estado) : '';
+  const completed = t.estado === 'Completada' || t.estado === 'Cancelada';
+  return `
+    <div class="card ${completed?'completed':''}" draggable="true"
+         data-row="${t.rowIndex}" data-area="${escapeHtml(t.area||'')}">
+      <span class="card-area">${escapeHtml(t.area||'—')}</span>
+      <div class="card-title">${escapeHtml(t.tarea||'')}</div>
+      <div class="card-meta">
+        <span class="card-resp" data-initials="${initials(t.responsable)}">${escapeHtml(t.responsable||'—')}</span>
+        <span>
+          <span class="card-prio ${escapeHtml(t.prioridad||'Media')}"></span>
+          ${fecha ? `<span class="card-fecha ${fechaCls}">${fecha}</span>` : ''}
+        </span>
+      </div>
+    </div>`;
+}
+
+function renderTable() {
+  const body = document.getElementById('table-body');
+  body.innerHTML = filtered.map(t => {
+    const completed = t.estado === 'Completada' || t.estado === 'Cancelada';
+    const fecha = t.fecha ? formatDate(t.fecha) : '—';
+    const fechaCls = t.fecha ? dateClass(t.fecha, t.estado) : '';
+    return `
+      <tr class="${completed?'completed':''}" onclick="openModal(${t.rowIndex})" style="cursor:pointer;">
+        <td><span class="card-area" style="margin:0;">${escapeHtml(t.area||'')}</span></td>
+        <td>${escapeHtml(t.tarea||'')}</td>
+        <td>${escapeHtml(t.responsable||'')}</td>
+        <td><span class="${fechaCls?'card-fecha '+fechaCls:''}">${fecha}</span></td>
+        <td><span class="badge badge-estado-${(t.estado||'').replace(' ','\\\\ ')}">${escapeHtml(t.estado||'')}</span></td>
+        <td><span class="card-prio ${escapeHtml(t.prioridad||'Media')}"></span> ${escapeHtml(t.prioridad||'')}</td>
+        <td style="font-size:11px; color:var(--ink-soft); max-width:200px;">${escapeHtml(t.notas||'')}</td>
+      </tr>`;
+  }).join('');
+}
+
+function renderKPIs() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const in7 = new Date(today); in7.setDate(in7.getDate()+7);
+  const active = t => t.estado !== 'Completada' && t.estado !== 'Cancelada';
+
+  document.getElementById('kpi-total').textContent = tareas.length;
+  document.getElementById('kpi-pendientes').textContent = tareas.filter(t => t.estado === 'Pendiente').length;
+  document.getElementById('kpi-curso').textContent = tareas.filter(t => t.estado === 'En curso').length;
+  document.getElementById('kpi-done').textContent = tareas.filter(t => t.estado === 'Completada').length;
+  document.getElementById('kpi-vencidas').textContent = tareas.filter(t => {
+    if (!t.fecha || !active(t)) return false;
+    return new Date(t.fecha) < today;
+  }).length;
+  document.getElementById('kpi-semana').textContent = tareas.filter(t => {
+    if (!t.fecha || !active(t)) return false;
+    const d = new Date(t.fecha);
+    return d >= today && d <= in7;
+  }).length;
+}
+
+function renderRespList() {
+  const resps = [...new Set(tareas.map(t => t.responsable).filter(Boolean))].sort();
+  const sel = document.getElementById('filter-resp');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Todos</option>' + resps.map(r => `<option>${escapeHtml(r)}</option>`).join('');
+  sel.value = cur;
+  document.getElementById('resp-options').innerHTML = resps.map(r => `<option value="${escapeHtml(r)}">`).join('');
+}
+
+// ════════════════════════════════════════════════════════════════
+// DRAG & DROP
+// ════════════════════════════════════════════════════════════════
+let draggedRow = null;
+function onDragStart(e) {
+  draggedRow = parseInt(e.currentTarget.dataset.row);
+  e.currentTarget.classList.add('dragging');
+  isDirty = true;
+}
+function onDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.column').forEach(c => c.classList.remove('drag-over'));
+  isDirty = false;
+}
+document.querySelectorAll('.column').forEach(col => {
+  col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('drag-over'); });
+  col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+  col.addEventListener('drop', async e => {
+    e.preventDefault();
+    col.classList.remove('drag-over');
+    if (!draggedRow) return;
+    const newStatus = col.dataset.status;
+    const t = tareas.find(x => x.rowIndex === draggedRow);
+    if (!t || t.estado === newStatus) return;
+    // Update optimista
+    t.estado = newStatus;
+    render();
+    try {
+      const res = await apiPost({ action: 'updateField', rowIndex: draggedRow, field: 'estado', value: newStatus });
+      if (!res.ok) throw new Error(res.error);
+      toast('Estado actualizado');
+    } catch (err) {
+      toast('Error al guardar', true);
+      fetchTareas();
+    }
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
+// MODAL
+// ════════════════════════════════════════════════════════════════
+function openModal(rowIndex) {
+  isDirty = true;
+  editingRowIndex = rowIndex || null;
+  document.getElementById('modal-title').textContent = rowIndex ? 'Editar tarea' : 'Nueva tarea';
+  document.getElementById('btn-delete').style.display = rowIndex ? 'block' : 'none';
+  if (rowIndex) {
+    const t = tareas.find(x => x.rowIndex === rowIndex);
+    if (!t) return;
+    document.getElementById('f-tarea').value = t.tarea || '';
+    document.getElementById('f-area').value = t.area || 'General';
+    document.getElementById('f-resp').value = t.responsable || '';
+    document.getElementById('f-fecha').value = t.fecha || '';
+    document.getElementById('f-prio').value = t.prioridad || 'Media';
+    document.getElementById('f-estado').value = t.estado || 'Pendiente';
+    document.getElementById('f-notas').value = t.notas || '';
+  } else {
+    document.getElementById('f-tarea').value = '';
+    document.getElementById('f-area').value = 'General';
+    document.getElementById('f-resp').value = '';
+    document.getElementById('f-fecha').value = '';
+    document.getElementById('f-prio').value = 'Media';
+    document.getElementById('f-estado').value = 'Pendiente';
+    document.getElementById('f-notas').value = '';
+  }
+  document.getElementById('modal').classList.add('open');
+  setTimeout(() => document.getElementById('f-tarea').focus(), 50);
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  editingRowIndex = null;
+  isDirty = false;
+}
+
+async function saveTask() {
+  const tarea = {
+    tarea: document.getElementById('f-tarea').value.trim(),
+    area: document.getElementById('f-area').value,
+    responsable: document.getElementById('f-resp').value.trim(),
+    fecha: document.getElementById('f-fecha').value,
+    prioridad: document.getElementById('f-prio').value,
+    estado: document.getElementById('f-estado').value,
+    notas: document.getElementById('f-notas').value.trim(),
+  };
+  if (!tarea.tarea) { toast('Falta la descripción', true); return; }
+  try {
+    if (editingRowIndex) {
+      const res = await apiPost({ action: 'update', rowIndex: editingRowIndex, tarea });
+      if (!res.ok) throw new Error(res.error);
+      toast('Tarea actualizada');
+    } else {
+      const res = await apiPost({ action: 'create', tarea });
+      if (!res.ok) throw new Error(res.error);
+      toast('Tarea creada');
+    }
+    closeModal();
+    fetchTareas();
+  } catch (err) {
+    toast('Error al guardar', true);
+    console.error(err);
+  }
+}
+
+async function deleteTask() {
+  if (!editingRowIndex) return;
+  if (!confirm('¿Eliminar esta tarea? No se puede deshacer (se borra la fila del Sheet).')) return;
+  try {
+    const res = await apiPost({ action: 'delete', rowIndex: editingRowIndex });
+    if (!res.ok) throw new Error(res.error);
+    toast('Tarea eliminada');
+    closeModal();
+    fetchTareas();
+  } catch (err) {
+    toast('Error al eliminar', true);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// VIEW SWITCH + FILTROS
+// ════════════════════════════════════════════════════════════════
+document.querySelectorAll('.view-switch button').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.view-switch button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    currentView = b.dataset.view;
+    document.getElementById('kanban').style.display = currentView === 'kanban' ? 'grid' : 'none';
+    document.getElementById('table-view').classList.toggle('active', currentView === 'tabla');
+  });
+});
+
+['filter-area','filter-resp','filter-prio'].forEach(id =>
+  document.getElementById(id).addEventListener('change', render));
+document.getElementById('search').addEventListener('input', render);
+
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target.id === 'modal') closeModal();
+});
+
+// ════════════════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════════════════
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function formatDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0');
+}
+function dateClass(iso, estado) {
+  if (estado === 'Completada' || estado === 'Cancelada') return '';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(iso);
+  if (d < today) return 'vencida';
+  const in7 = new Date(today); in7.setDate(in7.getDate()+7);
+  if (d <= in7) return 'proxima';
+  return '';
+}
+function initials(name) {
+  return (name||'?').split(/[\s\/]+/).map(p=>p[0]||'').join('').slice(0,2).toUpperCase();
+}
+let toastTimer;
+function toast(msg, isError) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.toggle('error', !!isError);
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════
+fetchTareas();
+pollTimer = setInterval(() => fetchTareas(true), POLL_INTERVAL);
+window.addEventListener('beforeunload', () => clearInterval(pollTimer));
+</script>
+
+</body>
+</html>
