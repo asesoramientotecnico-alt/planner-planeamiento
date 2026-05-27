@@ -673,6 +673,16 @@
     font-size: 10.5px; font-weight: 600; color: var(--ink);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
+  .card-age {
+    margin-left: auto; align-self: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 8.5px;
+    color: var(--ink-soft); white-space: nowrap; flex-shrink: 0;
+  }
+  .modal-meta {
+    font-size: 11px; color: var(--ink-soft); margin-top: 6px;
+    padding-top: 8px; border-top: 1px dashed var(--line);
+  }
+  .modal-meta b { color: var(--ink); font-weight: 600; }
 
   /* checkboxes de área en el modal */
   .chk-group { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -881,6 +891,9 @@
         <label>Notas</label>
         <textarea id="f-notas" placeholder="Comentarios, contexto…"></textarea>
       </div>
+      <div class="modal-meta" id="f-creada-wrap" style="display:none;">
+        🗓 Creada el <b id="f-creada"></b> · <span id="f-creada-ago"></span>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn-danger" id="btn-delete" onclick="deleteTask()" style="display:none;">Eliminar</button>
@@ -1030,9 +1043,11 @@ function cardHTML(t) {
     : '<span class="card-area">—</span>';
   const avatars   = resps.map(r => `<span class="resp-avatar" title="${escapeHtml(r)}">${escapeHtml(initials(r))}</span>`).join('');
   const names     = resps.length ? resps.join(', ') : '—';
+  const age       = t.fechaCreacion ? agoLabel(t.fechaCreacion) : '';
+  const ageHTML   = age ? `<span class="card-age" title="Creada el ${formatFull(t.fechaCreacion)}">${age}</span>` : '';
   return `<div class="card ${completed?'completed':''}" draggable="true"
        data-row="${t.rowIndex}" data-area="${escapeHtml(areas[0]||'')}">
-    <div class="card-areas">${areasHTML}</div>
+    <div class="card-areas">${areasHTML}${ageHTML}</div>
     <div class="card-title">${escapeHtml(t.tarea||'')}</div>
     <div class="card-meta">
       <span class="card-resps" title="${escapeHtml(names)}">
@@ -1298,12 +1313,21 @@ function openModal(rowIndex) {
     document.getElementById('f-prio'       ).value = t.prioridad    || 'Media';
     document.getElementById('f-estado'     ).value = t.estado       || 'Pendiente';
     document.getElementById('f-notas'      ).value = t.notas        || '';
+    const wrap = document.getElementById('f-creada-wrap');
+    if (t.fechaCreacion) {
+      document.getElementById('f-creada').textContent = formatFull(t.fechaCreacion);
+      document.getElementById('f-creada-ago').textContent = agoLabel(t.fechaCreacion);
+      wrap.style.display = 'block';
+    } else {
+      wrap.style.display = 'none';
+    }
   } else {
     ['f-tarea','f-fecha-inicio','f-fecha','f-notas'].forEach(id => document.getElementById(id).value = '');
     renderAreaCheckboxes(['General']);
     respTags = [];
     document.getElementById('f-prio'  ).value = 'Media';
     document.getElementById('f-estado').value = 'Pendiente';
+    document.getElementById('f-creada-wrap').style.display = 'none';
   }
   document.getElementById('f-resp').value = '';
   renderRespTags();
@@ -1444,6 +1468,23 @@ function escapeHtml(s) {
 // "Negocio, PxD" → ["Negocio","PxD"]. Compatible con dato viejo de 1 solo valor.
 function parseList(s) {
   return String(s ?? '').split(',').map(x => x.trim()).filter(Boolean);
+}
+function formatFull(iso) {
+  const d = pdate(iso); if (!d) return '';
+  return String(d.getDate()).padStart(2,'0') + '/' +
+         String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+}
+// Días transcurridos desde la creación: "hoy", "ayer", "hace 3d", "hace 2sem"…
+function agoLabel(iso) {
+  const d = pdate(iso); if (!d) return '';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const days = Math.round((today - d) / 86400000);
+  if (days <= 0)   return 'hoy';
+  if (days === 1)  return 'ayer';
+  if (days < 7)    return 'hace ' + days + 'd';
+  if (days < 30)   return 'hace ' + Math.floor(days/7) + 'sem';
+  if (days < 365)  return 'hace ' + Math.floor(days/30) + 'mes';
+  return 'hace ' + Math.floor(days/365) + 'a';
 }
 function formatDate(iso) {
   if (!iso) return '';
